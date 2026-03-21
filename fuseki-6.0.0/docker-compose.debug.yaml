@@ -1,0 +1,37 @@
+## Licensed under the terms of http://www.apache.org/licenses/LICENSE-2.0
+## Debug override — adds a one-shot diagnostic container that probes the fuseki service.
+## Usage: docker compose -f docker-compose.yaml -f docker-compose.debug.yaml up
+
+services:
+  fuseki-verify:
+    image: alpine:latest
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "Installing curl and network tools..."
+        apk add --no-cache curl iputils
+        echo "Network diagnostics:"
+        ip addr
+        echo "DNS resolution test:"
+        getent hosts fuseki || echo "Cannot resolve fuseki hostname"
+        echo "Ping test to fuseki:"
+        ping -c 2 fuseki || echo "Cannot ping fuseki"
+        echo "Attempt 1: ping endpoint (no auth required)"
+        curl -f -s http://fuseki:3030/$$/ping && echo "Fuseki alive!" || echo "Ping failed"
+        echo "Attempt 2: status endpoint (auth required)"
+        curl -f -s -u $$FUSEKI_ADMIN_USER:$$FUSEKI_ADMIN_PASSWORD http://fuseki:3030/$$/status
+    environment:
+      - FUSEKI_ADMIN_USER=${FUSEKI_ADMIN_USER:-admin}
+      - FUSEKI_ADMIN_PASSWORD=${FUSEKI_ADMIN_PASSWORD:-password}
+    depends_on:
+      fuseki:
+        condition: service_healthy
+    networks:
+      - semantic-web
+    restart: "no"
+
+networks:
+  semantic-web:
+    external: true
+    name: ${DOCKER_NETWORK:-semantic-web}

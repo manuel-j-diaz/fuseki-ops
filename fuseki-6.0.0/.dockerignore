@@ -1,0 +1,11 @@
+# Secrets
+.env
+
+# Runtime data — not needed at build time
+databases/
+logs/
+
+# Docs
+README.md
+LICENSE
+NOTICE

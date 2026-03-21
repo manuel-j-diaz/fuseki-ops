@@ -1,0 +1,20 @@
+# Licensed under the terms of http://www.apache.org/licenses/LICENSE-2.0
+
+[main]
+ssl.enabled = false
+
+plainMatcher=org.apache.shiro.authc.credential.SimpleCredentialsMatcher
+iniRealm.credentialsMatcher = $plainMatcher
+
+[users]
+${FUSEKI_ADMIN_USER}=${FUSEKI_ADMIN_PASSWORD},fuseki
+
+[roles]
+fuseki=*
+
+[urls]
+/$/server  = anon
+/$/ping    = anon
+/$/metrics = anon
+/$/**      = authcBasic,user[fuseki]
+/**        = authcBasic

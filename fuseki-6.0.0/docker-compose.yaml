@@ -1,0 +1,52 @@
+## Licensed under the terms of http://www.apache.org/licenses/LICENSE-2.0
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+services:
+  fuseki:
+    ## In-memory dataset (default, data lost on stop):
+    command: [ "--ui", "/fuseki/webapp", "--mem", "/ds" ]
+    ## Persistent TDB2 dataset (uncomment to use, comment out the line above):
+    ## command: [ "--ui", "/fuseki/webapp", "--tdb2", "--update", "--loc", "databases/DB2", "/ds" ]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fuseki
+    environment:
+      - FUSEKI_ADMIN_USER=${FUSEKI_ADMIN_USER:-admin}
+      - FUSEKI_ADMIN_PASSWORD=${FUSEKI_ADMIN_PASSWORD:-password}
+    ports:
+      - "${FUSEKI_PORT:-3030}:3030"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://$$FUSEKI_ADMIN_USER:$$FUSEKI_ADMIN_PASSWORD@localhost:3030/$$/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - ./logs:/fuseki/logs
+      - ./databases:/fuseki/databases
+    networks:
+      - fuseki-net
+      - semantic-web
+
+networks:
+  fuseki-net:
+    driver: bridge
+  semantic-web:
+    external: true
+    name: ${DOCKER_NETWORK:-semantic-web}
+    internal: true
