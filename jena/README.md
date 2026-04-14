@@ -1,12 +1,20 @@
 # Jena 6.0.0
 
+> Part of [fuseki-ops](../README.md).
+
 Self-contained Docker image of the [Apache Jena 6.0.0](https://jena.apache.org/) CLI toolkit. Intended for one-shot use: run a command, get output, container exits.
 
-## Build
+## Pull or build
 
 ```bash
+# Pull from GHCR (no login required)
+docker pull ghcr.io/manuel-j-diaz/fuseki-ops/jena:latest
+
+# — or build locally —
 docker build -t jena --build-arg JENA_VERSION=6.0.0 .
 ```
+
+The examples below use `jena` as the image name. Substitute the GHCR path if you pulled instead of building.
 
 ## Usage
 
@@ -39,6 +47,9 @@ Logs go to STDERR; query results go to STDOUT — they do not mix.
 
 ## Available tools
 
+<details>
+<summary>Full tool list (click to expand)</summary>
+
 | Tool | Purpose |
 |------|---------|
 | `arq`, `sparql` | SPARQL query (SELECT, CONSTRUCT, ASK, DESCRIBE) |
@@ -64,6 +75,8 @@ Logs go to STDERR; query results go to STDOUT — they do not mix.
 | `juuid` | Generate UUIDs |
 | `schemagen` | Generate Java classes from an OWL/RDFS schema |
 | `wwwenc`, `wwwdec`, `utf8` | URL encoding / UTF-8 utilities |
+
+</details>
 
 ## How the image is built
 

@@ -1,131 +1,63 @@
-# fuseki-ops
+# Apache Jena and Fuseki Images
 
-Docker deployments for [Apache Jena](https://jena.apache.org/) stack, including CLI tools and Fuseki SPARQL server. Each versioned subdirectory is self-contained.
+[![Jena CI](https://github.com/manuel-j-diaz/fuseki-ops/actions/workflows/jena.yaml/badge.svg)](https://github.com/manuel-j-diaz/fuseki-ops/actions/workflows/jena.yaml)
+[![Fuseki CI](https://github.com/manuel-j-diaz/fuseki-ops/actions/workflows/fuseki.yaml/badge.svg)](https://github.com/manuel-j-diaz/fuseki-ops/actions/workflows/fuseki.yaml)
+[![Jena](https://img.shields.io/badge/Jena-6.0.0-blue)](https://jena.apache.org/)
+[![Fuseki](https://img.shields.io/badge/Fuseki-6.0.0-blue)](https://jena.apache.org/documentation/fuseki2/)
+[![License](https://img.shields.io/github/license/manuel-j-diaz/fuseki-ops)](LICENSE)
 
-> **Local development only.** This setup is not hardened for production:
-> - Default credentials (`admin` / `password`) are weak and committed to the example env file
-> - No TLS — all traffic, including credentials, is sent in plaintext over HTTP
-> - The `semantic-web` network is internal but Fuseki's admin API is exposed on the host port with no additional access controls
->
-> Do not expose this service to the public internet or untrusted networks without addressing the above.
+Docker images for [Apache Jena](https://jena.apache.org/) 6.0.0: CLI tools and Fuseki SPARQL server.
 
-## Images
+> **Local development only.** Not hardened for production — default credentials, no TLS, admin API exposed on host port. Do not expose to untrusted networks without hardening.
 
-| Directory | Contents | Type |
-|-----------|----------|------|
-| `jena-6.0.0/` | Jena 6.0.0 CLI tools (`arq`, `riot`, `sparql`, `tdb2`, …) | One-shot CLI |
-| `fuseki-6.0.0/` | Fuseki 6.0.0 SPARQL server with web UI | Long-running service |
+| Image | Description | Docs |
+|-------|-------------|------|
+| `jena` | Jena 6.0.0 CLI tools (`arq`, `riot`, `shacl`, `tdb2`, …) — one-shot containers | [jena/](jena/README.md) |
+| `fuseki` | Fuseki 6.0.0 SPARQL server with web UI — long-running service | [fuseki/](fuseki/README.md) |
 
-## Prerequisites
+## Quick start
 
-- Docker with Compose v2
+### Option 1: Pull from GHCR
 
----
-
-## Jena CLI (`jena-6.0.0/`)
-
-### Build
+Pre-built images are published to GitHub Container Registry. No login required.
 
 ```bash
-docker build -t jena --build-arg JENA_VERSION=6.0.0 jena-6.0.0/
+# Jena CLI — run a SPARQL query
+docker run --rm -v $(pwd):/rdf ghcr.io/manuel-j-diaz/fuseki-ops/jena:latest \
+  arq --query query.rq --data data.ttl
+
+# Fuseki — start with an in-memory dataset
+docker run --rm -p 3030:3030 ghcr.io/manuel-j-diaz/fuseki-ops/fuseki:latest \
+  --ui /fuseki/webapp --mem /ds
 ```
 
-### Usage
+Available tags:
 
-Mount a directory containing your `.rq` query files and `.ttl` data files to `/rdf` (the container working directory):
+| Tag | Example | Description |
+|-----|---------|-------------|
+| `latest` | `latest` | Most recent build from `main` |
+| version | `6.0.0` | Pinned to a release (from git tag `jena/v6.0.0` or `fuseki/v6.0.0`), no leading `v` |
+| SHA | `a1b2c3d` | Pinned to a specific commit SHA |
+
+### Option 2: Build from source
+
+Requires Docker with Compose v2.
 
 ```bash
-# SPARQL query against a local Turtle file
+# Jena CLI
+docker build -t jena --build-arg JENA_VERSION=6.0.0 jena/
 docker run --rm -v $(pwd):/rdf jena arq --query query.rq --data data.ttl
-
-# Validate / convert RDF syntax
-docker run --rm -v $(pwd):/rdf jena riot --validate data.ttl
-docker run --rm -v $(pwd):/rdf jena riot --out NTRIPLES data.ttl
-
-# Query a remote SPARQL endpoint
-docker run --rm jena arq --query query.rq --service http://host.docker.internal:3040/ds/query
 ```
-
-### Available tools
-
-| Tool | Purpose |
-|------|---------|
-| `arq`, `sparql` | SPARQL query (SELECT, CONSTRUCT, ASK, DESCRIBE) |
-| `update` | SPARQL Update (INSERT/DELETE) |
-| `rsparql`, `rupdate` | Query/update a remote SPARQL endpoint |
-| `riot` | Parse, validate, and convert RDF (Turtle, N-Triples, JSON-LD, RDF/XML, …) |
-| `rdfparse`, `rdfcat`, `rdfcopy`, `rdfdiff`, `rdfcompare` | RDF file utilities |
-| `rdfxml`, `ntriples`, `nquads`, `turtle`, `trig` | Format-specific parsers |
-| `rdfpatch` | Apply RDF Patch changesets |
-| `shacl` | SHACL validation |
-| `shex` | ShEx validation |
-| `infer` | RDFS / OWL inference |
-| `qparse`, `uparse` | Parse and print SPARQL query/update syntax trees |
-| `rset` | Read and display SPARQL result sets |
-| `tdb2.tdbloader`, `tdb2.xloader` | Bulk-load RDF into a TDB2 dataset |
-| `tdb2.tdbquery` | Query a TDB2 dataset directly |
-| `tdb2.tdbupdate` | SPARQL Update against a TDB2 dataset |
-| `tdb2.tdbdump`, `tdb2.tdbstats` | Inspect a TDB2 dataset |
-| `tdb2.tdbbackup`, `tdb2.tdbcompact` | Backup and compact a TDB2 dataset |
-| `tdb1.*`, `tdbloader`, `tdbquery`, … | TDB1 equivalents (legacy) |
-| `iri` | Parse and normalise IRIs |
-| `langtag` | Parse and validate BCP 47 language tags |
-| `juuid` | Generate UUIDs |
-| `schemagen` | Generate Java classes from an OWL/RDFS schema |
-| `wwwenc`, `wwwdec`, `utf8` | URL encoding / UTF-8 utilities |
-
----
-
-## Fuseki SPARQL Server (`fuseki-6.0.0/`)
-
-### Configuration
-
-Copy and edit the env file before first use:
 
 ```bash
-cp fuseki-6.0.0/.env.example fuseki-6.0.0/.env
+# Fuseki (see fuseki/README.md for full setup including networking)
+cp fuseki/.env.example fuseki/.env
+docker network create --internal semantic-web
+docker compose -f fuseki/docker-compose.yaml build --build-arg JENA_VERSION=6.0.0
+docker compose -f fuseki/docker-compose.yaml up -d
+# Web UI → http://localhost:3040
 ```
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `FUSEKI_PORT` | `3040` | Host port Fuseki is exposed on |
-| `FUSEKI_ADMIN_USER` | `admin` | Admin username |
-| `FUSEKI_ADMIN_PASSWORD` | `password` | Admin password |
-| `DOCKER_NETWORK` | `semantic-web` | External Docker network name |
+## License
 
-### Build
-
-```bash
-docker compose -f fuseki-6.0.0/docker-compose.yaml build --build-arg JENA_VERSION=6.0.0
-```
-
-### Run
-
-The dataset mode is set by the `command` in `fuseki-6.0.0/docker-compose.yaml`. The default is in-memory. To switch to persistent TDB2, comment/uncomment the two `command` lines in the compose file, then:
-
-```bash
-docker compose -f fuseki-6.0.0/docker-compose.yaml up
-```
-
-> **Note:** Use `docker compose up` rather than `docker compose run --service-ports`. Due to a bug in Compose v2.29.x, the latter does not reliably publish ports when the service is on a non-default network.
-
-Fuseki will be available at `http://localhost:3040` (or whatever `FUSEKI_PORT` in [fuseki-6.0.0/.env](./fuseki-6.0.0/.env) is set to). All endpoints require HTTP Basic Auth.
-
-### Debugging
-
-To run a one-shot diagnostic container that probes the Fuseki service (DNS, ping, HTTP):
-
-```bash
-docker compose -f fuseki-6.0.0/docker-compose.yaml -f fuseki-6.0.0/docker-compose.debug.yaml up
-```
-
-### Web UI and SPARQL Endpoints
-
-The web UI is available at `http://localhost:3040`. The `/ds` dataset also exposes protocol endpoints directly:
-
-| Endpoint | URL |
-|----------|-----|
-| SPARQL Query | `http://localhost:3040/ds/query` |
-| SPARQL Update | `http://localhost:3040/ds/update` |
-| Graph Store | `http://localhost:3040/ds/data` |
-| Liveness | `http://localhost:3040/$/ping` |
+Apache Jena and Apache Jena Fuseki are licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). This repository is licensed under the same terms. See [LICENSE](LICENSE).
